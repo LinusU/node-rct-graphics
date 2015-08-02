@@ -24,19 +24,21 @@ function loadCompactedBitmap (srcData, record) {
   result.fill(0)
 
   for (let y = 0; y < height; y++) {
-    let isLast
+    let isLast = false
     let startOffset = struct.read('uint16', srcData, startAddress + (2 * y))
+    let currentPos = startAddress + startOffset
 
     do {
-      let scanElement = TScanElement.read(srcData, startAddress + startOffset)
+      let scanElement = TScanElement.read(srcData, currentPos)
+      currentPos += TScanElement.byteLength
 
-      isLast = (scanElement.size & 0x80)
+      isLast = Boolean(scanElement.size & 0x80)
       let scanSize = (scanElement.size & 0x7F)
-      let pixelsPos = startAddress + startOffset + TScanElement.byteLength
 
       if (scanSize > width) throw new Error('Line overflow')
 
-      srcData.copy(result, y * width + scanElement.offset, pixelsPos, pixelsPos + scanSize)
+      srcData.copy(result, y * width + scanElement.offset, currentPos, currentPos + scanSize)
+      currentPos += scanSize
     } while (isLast === false)
   }
 
